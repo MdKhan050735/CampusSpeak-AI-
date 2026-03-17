@@ -1,10 +1,10 @@
-🎤 CampusSpeak AI
+### 🎤 CampusSpeak AI
 
 CampusSpeak AI is an AI-powered presentation practice tool that helps students improve their speaking confidence through real-time speech analysis and feedback.
 
 Built with Flask, Web Speech API, and Gemini AI.
 
-✨ Key Features
+### ✨ Key Features
 
 🎙 Live Speech Recognition – Real-time transcription using Web Speech API
 
@@ -22,7 +22,7 @@ Built with Flask, Web Speech API, and Gemini AI.
 
 🎨 Modern UI – Glassmorphism design with animated particle effects
 
-🛠 Tech Stack
+### 🛠 Tech Stack
 
 Backend: Flask (Python)
 Frontend: HTML, CSS, JavaScript
@@ -30,7 +30,7 @@ Speech Recognition: Web Speech API
 AI Feedback: Gemini API
 Styling: Tailwind CSS
 
-🚀 Run the Project
+### 🚀 Run the Project
 
 Install dependencies
 
@@ -47,10 +47,11 @@ python app.py
 
 Open in browser
 
-http://localhost:5000
+https://campus-speak-ai.vercel.app/
+
 📊 Speech Metrics
 
-CampusSpeak AI analyzes:
+### CampusSpeak AI analyzes:
 
 Words Per Minute (WPM)
 
