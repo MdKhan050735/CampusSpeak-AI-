@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CampusSpeak AI</title>
+    <meta name="description" content="AI-powered speaking practice for university students. Improve confidence, reduce filler words, and ace your placements.">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0ea5e9',
+                        secondary: '#06b6d4',
+                        accent: '#f97316',
+                        dark: '#0f172a'
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=12">
+</head>
+<body>
+    <!-- Cursor-Following Glow Effect -->
+    <div class="cursor-glow" id="cursorGlow"></div>
+    
+    <!-- Animated Background -->
+    <div class="gradient-bg">
+        <div class="gradient-1"></div>
+        <div class="gradient-2"></div>
+        <div class="gradient-3"></div>
+    </div>
+
+    <!-- Floating Particles -->
+    <div class="particles" id="particlesContainer"></div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Header -->
+        <header class="header glass bg-gradient-to-r from-blue-600 to-cyan-500 shadow-2xl rounded-xl border-2 border-white border-opacity-30 relative overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 hover:opacity-20 transition-opacity duration-500"></div>
+            <div class="logo flex items-center gap-4 relative z-10">
+                <div class="p-3 bg-white bg-opacity-25 rounded-xl hover:bg-opacity-40 transition-all duration-300 transform hover:scale-110 hover:shadow-xl">
+                    <i class="fas fa-microphone-alt text-white text-3xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-white font-black text-4xl drop-shadow-lg tracking-tight">CampusSpeak AI</h1>
+                    <p class="text-blue-100 text-sm font-semibold mt-1">Master Your Public Speaking Skills</p>
+                </div>
+            </div>
+            <div class="status-badge bg-white bg-opacity-25 backdrop-blur-md rounded-full px-6 py-3 flex items-center gap-2 relative z-10 border border-white border-opacity-40 shadow-lg" id="apiStatus">
+                <i class="fas fa-circle text-emerald-300 text-sm animate-pulse"></i>
+                <span class="text-white font-bold">Connected</span>
+            </div>
+            {% if demo_mode %}
+            <div class="demo-badge bg-gradient-to-r from-purple-500 to-pink-500 backdrop-blur-md rounded-full px-6 py-3 flex items-center gap-2 relative z-10 border border-white border-opacity-40 shadow-lg">
+                <i class="fas fa-star text-yellow-300 text-sm animate-bounce"></i>
+                <span class="text-white font-bold">DEMO MODE</span>
+            </div>
+            {% endif %}
+            <a href="{{ '/dashboard?demo=1' if demo_mode else '/dashboard' }}" class="logout-btn relative z-10" title="Progress Dashboard" style="margin-right:4px;">
+                <i class="fas fa-chart-line"></i>
+            </a>
+            <a href="/logout" class="logout-btn relative z-10" title="Logout">
+                <i class="fas fa-sign-out-alt"></i>
+            </a>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Left Panel - Script Input -->
+            <div class="panel glass bg-white bg-opacity-10 backdrop-blur-md rounded-2xl border border-white border-opacity-20">
+                <div class="panel-header bg-gradient-to-r from-indigo-500 to-blue-500 rounded-t-2xl p-4 flex justify-between items-center">
+                    <h2 class="text-white font-bold text-xl flex items-center gap-2"><i class="fas fa-pen text-2xl"></i> Your Script</h2>
+                    <button class="btn-icon bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-2 rounded-lg transition-all" id="minimizeScript">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                </div>
+                
+                <div class="script-editor p-4">
+                    <!-- File Import Section -->
+                    <div class="import-section bg-gradient-to-r from-blue-50 to-cyan-50 p-4 rounded-lg mb-4 border-2 border-blue-200">
+                        <p class="import-label text-blue-700 font-semibold mb-3"><i class="fas fa-file-import mr-2"></i> Import Script From:</p>
+                        <div class="import-buttons flex flex-wrap gap-2">
+                            <label class="import-btn import-txt bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg cursor-pointer font-semibold transition-all hover:shadow-lg" title="Import .txt file">
+                                <i class="fas fa-file-alt mr-1"></i> TXT
+                                <input type="file" accept=".txt" id="importTxt" hidden>
+                            </label>
+                            <label class="import-btn import-pdf bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg cursor-pointer font-semibold transition-all hover:shadow-lg" title="Import .pdf file">
+                                <i class="fas fa-file-pdf mr-1"></i> PDF
+                                <input type="file" accept=".pdf" id="importPdf" hidden>
+                            </label>
+                            <label class="import-btn import-doc bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-2 rounded-lg cursor-pointer font-semibold transition-all hover:shadow-lg" title="Import .docx file">
+                                <i class="fas fa-file-word mr-1"></i> DOC
+                                <input type="file" accept=".docx" id="importDoc" hidden>
+                            </label>
+                            <label class="import-btn import-code bg-orange-500 hover:bg-orange-600 text-white px-3 py-2 rounded-lg cursor-pointer font-semibold transition-all hover:shadow-lg" title="Import code/source file">
+                                <i class="fas fa-file-code mr-1"></i> Code
+                                <input type="file" accept=".py,.js,.ts,.java,.c,.cpp,.cs,.rb,.go,.rs,.html,.css,.json,.xml,.yaml,.yml,.md" id="importCode" hidden>
+                            </label>
+                            <label class="import-btn import-ppt bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-2 rounded-lg cursor-pointer font-semibold transition-all hover:shadow-lg" title="Import .ppt/.pptx file">
+                                <i class="fas fa-file-powerpoint mr-1"></i> PPT
+                                <input type="file" accept=".ppt,.pptx" id="importPpt" hidden>
+                            </label>
+                        </div>
+                    </div>
+
+                    <textarea 
+                        id="scriptInput" 
+                        class="w-full p-4 bg-white bg-opacity-80 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 resize-none font-medium"
+                        placeholder="Paste your presentation script here... (Include main points, transitions, and key phrases)"
+                    ></textarea>
+                    
+                    <div class="script-stats flex gap-4 my-4 text-white font-semibold" id="scriptStats">
+                        <span class="bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-2 rounded-lg shadow-md"><i class="fas fa-file-alt mr-2"></i><span id="wordCount">0</span> words</span>
+                        <span class="bg-gradient-to-r from-purple-500 to-purple-600 px-4 py-2 rounded-lg shadow-md"><i class="fas fa-clock mr-2"></i><span id="timeEstimate">0</span> min</span>
+                    </div>
+                    
+                    <!-- ── Placement Preparation Mode ───────────────────── -->
+                    <div class="placement-mode-section" id="placementModeSection">
+                        <p class="import-label" style="margin-bottom:8px;"><i class="fas fa-briefcase mr-2"></i>Placement Prep Mode:</p>
+                        <div class="flex flex-wrap gap-2">
+                            <button class="placement-btn" data-prompt="Good morning! My name is [Your Name] and I am a final-year student of Computer Science Engineering. I have a strong foundation in software development, data structures, and algorithms. During my studies, I worked on several projects including a machine learning model for sentiment analysis and a full-stack web application. I am passionate about problem-solving and I believe I would be a great asset to your team. Thank you!" data-mode="Self Introduction">
+                                <i class="fas fa-user"></i> Self Intro
+                            </button>
+                            <button class="placement-btn" data-prompt="I should be hired because I bring a unique combination of technical skills and a strong work ethic. I have consistently performed well in academics, achieving a GPA of 8.5 out of 10. I am a quick learner, a team player, and I adapt easily to new environments. My internship experience at a software company gave me hands-on knowledge of industry standards. I am confident I will contribute positively to your organization from day one." data-mode="HR Interview">
+                                <i class="fas fa-handshake"></i> HR Interview
+                            </button>
+                            <button class="placement-btn" data-prompt="Good afternoon everyone. Today I will be presenting on the topic of Artificial Intelligence in Healthcare. My presentation is structured into three parts: first, the current applications of AI in diagnostics, second, real-world case studies demonstrating AI's impact, and third, the ethical considerations and future roadmap. Let me begin with the first section." data-mode="Presentation">
+                                <i class="fas fa-chalkboard-teacher"></i> Presentation
+                            </button>
+                            <button class="placement-btn" data-prompt="I believe that technology is the key driver of economic growth in today's world. With rapid advancements in artificial intelligence, automation, and biotechnology, we are witnessing unprecedented changes. However, we must also address the challenges such as job displacement and digital inequality. It is essential for governments and corporations to invest in reskilling programs to ensure inclusive growth." data-mode="Group Discussion">
+                                <i class="fas fa-users"></i> Group Discussion
+                            </button>
+                        </div>
+                    </div>
+                    <!-- ────────────────────────────────────────────────── -->
+
+                    <div class="script-actions flex gap-3 pt-4">
+                        <button class="btn-primary flex-1 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105" id="loadScriptBtn">
+                            <i class="fas fa-magic mr-2"></i> Analyze Script
+                        </button>
+                        <button class="btn-secondary flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200" id="clearScriptBtn">
+                            <i class="fas fa-trash mr-2"></i> Clear
+                        </button>
+                    </div>
+                    
+                    <div class="script-analysis" id="scriptAnalysis" style="display: none;">
+                        <h3>📊 Script Analysis</h3>
+                        <div class="analysis-content"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center Panel - Practice Area -->
+            <div class="panel glass bg-white bg-opacity-10 backdrop-blur-md rounded-2xl border border-white border-opacity-20">
+                <div class="panel-header bg-gradient-to-r from-blue-500 to-purple-500 rounded-t-2xl p-4 flex justify-between items-center">
+                    <h2 class="text-white font-bold text-xl flex items-center gap-2"><i class="fas fa-microphone text-2xl"></i> Practice Session</h2>
+                    <div class="timer bg-white bg-opacity-20 px-4 py-2 rounded-lg text-white font-mono font-bold text-lg" id="timer">00:00</div>
+                </div>
+                
+                <!-- Practice Modes (Tabs) -->
+                <div class="practice-modes bg-gray-100 bg-opacity-50 p-2 rounded-lg m-4 flex gap-2">
+                    <button class="mode-tab active px-6 py-2 rounded-lg font-semibold transition-all duration-200 bg-white text-blue-600 shadow-md" data-mode="free">
+                        <i class="fas fa-microphone mr-2"></i>Free Speaking
+                    </button>
+                    <button class="mode-tab px-6 py-2 rounded-lg font-semibold transition-all duration-200 bg-transparent text-gray-700 hover:bg-white hover:bg-opacity-50" data-mode="teleprompter">
+                        <i class="fas fa-scroll mr-2"></i>Teleprompter
+                    </button>
+                </div>
+                
+                <div class="practice-area">
+                    <!-- Mic Button -->
+                    <div class="mic-wrapper">
+                        <canvas id="micLevelCanvas" width="160" height="160"></canvas>
+                        <button class="mic-button" id="micButton">
+                            <i class="fas fa-microphone"></i>
+                            <span class="mic-status">Start Speaking</span>
+                        </button>
+                    </div>
+                    <div class="mic-feedback" id="micFeedback">
+                        <span class="mic-feedback-text">Click the mic or press Start Practice</span>
+                    </div>
+                    
+                    <!-- Live Transcript -->
+                    <div class="transcript-container">
+                        <div class="transcript-header">
+                            <span>Live Transcript</span>
+                            <span class="filler-counter" id="fillerCount">0 fillers</span>
+                        </div>
+                        <div class="transcript-box" id="transcriptBox">
+                            <p class="placeholder">Click the mic and start speaking...</p>
+                        </div>
+                    </div>
+
+                    <!-- Teleprompter -->
+                    <div class="teleprompter-container" id="teleprompterContainer" style="display: none;">
+                        <div class="teleprompter-header">
+                            <i class="fas fa-scroll"></i>
+                            <span>Teleprompter</span>
+                            <span class="teleprompter-progress" id="teleprompterProgress">0 / 0</span>
+                        </div>
+                        <div class="teleprompter-controls">
+                            <button class="tp-ctrl-btn" id="tpPlayBtn" title="Auto-read">
+                                <i class="fas fa-play"></i>
+                            </button>
+                            <button class="tp-ctrl-btn" id="tpPauseBtn" title="Pause" style="display:none;">
+                                <i class="fas fa-pause"></i>
+                            </button>
+                            <button class="tp-ctrl-btn" id="tpResetBtn" title="Reset">
+                                <i class="fas fa-redo"></i>
+                            </button>
+                            <div class="tp-speed-control">
+                                <label for="tpSpeed"><i class="fas fa-tachometer-alt"></i></label>
+                                <input type="range" id="tpSpeed" min="60" max="220" value="140" step="10">
+                                <span class="tp-speed-label" id="tpSpeedLabel">140 WPM</span>
+                            </div>
+                        </div>
+                        <div class="teleprompter-box" id="teleprompterBox"></div>
+                        <div class="teleprompter-empty" id="teleprompterEmpty" style="display:none;">
+                            Please import a script first to use the Teleprompter.
+                        </div>
+                    </div>
+                    
+                    <!-- AI Prompt (Safety Net) -->
+                    <div class="prompt-container" id="promptContainer">
+                        <div class="prompt-header">
+                            <i class="fas fa-lightbulb"></i>
+                            <span>Next Prompt (Look here if stuck)</span>
+                        </div>
+                        <div class="prompt-box" id="promptBox">
+                            Your AI coach will guide you...
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Bar -->
+                    <div class="progress-container">
+                        <div class="progress-label">
+                            <span>Progress</span>
+                            <span id="progressPercent">0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Audience Simulation Toggle -->
+                <div class="audience-sim-bar" id="audienceSimBar">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <div class="sim-icon"><i class="fas fa-users"></i></div>
+                        <div>
+                            <div style="font-size:0.85rem;font-weight:600;">Audience Simulation</div>
+                            <div style="font-size:0.72rem;color:rgba(255,255,255,0.5);">Play crowd noise to train under pressure</div>
+                        </div>
+                    </div>
+                    <label class="toggle-switch" title="Toggle audience noise">
+                        <input type="checkbox" id="audienceSimToggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="session-controls flex gap-3 p-4">
+                    <button class="btn-primary flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105" id="startSessionBtn">
+                        <i class="fas fa-play mr-2"></i> Start Practice
+                    </button>
+                    <button class="btn-secondary flex-1 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50" id="endSessionBtn" disabled>
+                        <i class="fas fa-stop mr-2"></i> End Session
+                    </button>
+                    <button class="btn-tertiary flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200" id="loadDemoBtn" title="View a sample analysis">
+                        <i class="fas fa-star mr-2"></i> Try Demo
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Panel - Analytics (Hidden per user request, but kept for logic) -->
+            <div class="panel glass" id="analyticsPanel" style="display: none;">
+                <div class="panel-header">
+                    <h2><i class="fas fa-chart-line"></i> Live Analytics</h2>
+                    <button class="btn-icon" id="minimizeAnalytics">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                </div>
+                
+                <div class="analytics-content">
+                    <!-- Pace Meter with Circular Gauge -->
+                    <div class="metric-card">
+                        <div class="metric-title">
+                            <i class="fas fa-tachometer-alt"></i>
+                            <span>Speech Pace</span>
+                        </div>
+                        <div class="gauge-container" id="paceGauge">
+                            <svg viewBox="0 0 120 120">
+                                <circle class="gauge-bg" cx="60" cy="60" r="50"></circle>
+                                <circle class="gauge-fill" id="paceGaugeFill" cx="60" cy="60" r="50"
+                                    stroke-dasharray="314.16" stroke-dashoffset="314.16"></circle>
+                            </svg>
+                            <div class="gauge-value">
+                                <span class="value" id="wpmValue">0</span>
+                                <span class="label">WPM</span>
+                            </div>
+                        </div>
+                        <div class="pace-indicator">
+                            <div class="pace-bar" id="paceBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Filler Words -->
+                    <div class="metric-card">
+                        <div class="metric-title">
+                            <i class="fas fa-ban"></i>
+                            <span>Filler Words</span>
+                        </div>
+                        <div class="metric-value" id="fillerValue">0</div>
+                        <div class="metric-unit">detected</div>
+                    </div>
+                    
+                    <!-- Clarity Score with Circular Gauge -->
+                    <div class="metric-card">
+                        <div class="metric-title">
+                            <i class="fas fa-star"></i>
+                            <span>Clarity Score</span>
+                        </div>
+                        <div class="gauge-container" id="clarityGauge">
+                            <svg viewBox="0 0 120 120">
+                                <circle class="gauge-bg" cx="60" cy="60" r="50"></circle>
+                                <circle class="gauge-fill" id="clarityGaugeFill" cx="60" cy="60" r="50"
+                                    stroke-dasharray="314.16" stroke-dashoffset="314.16"></circle>
+                            </svg>
+                            <div class="gauge-value">
+                                <span class="value" id="clarityValue">-</span>
+                                <span class="label">/ 100</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- WPM Sparkline -->
+                    <div class="metric-card">
+                        <div class="sparkline-container">
+                            <div class="sparkline-label">WPM Over Time</div>
+                            <canvas id="wpmSparkline"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Suggestions -->
+                    <div class="suggestions-card">
+                        <h4>💡 Suggestions</h4>
+                        <ul id="suggestionsList">
+                            <li>Start speaking to get feedback</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Final Analysis Modal -->
+        <div class="modal" id="analysisModal">
+            <div class="modal-content glass">
+                <div class="modal-header">
+                    <h2>🎯 Session Complete!</h2>
+                    <button class="close-modal" id="closeModal">&times;</button>
+                </div>
+                
+                <div class="modal-body">
+                    <!-- Confidence + Personality banner -->
+                    <div class="confidence-personality-banner" id="confPersonalityBanner">
+                        <div class="conf-ring-mini">
+                            <svg viewBox="0 0 80 80" width="80" height="80">
+                                <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="8"/>
+                                <circle cx="40" cy="40" r="34" fill="none" id="modalConfRing"
+                                    stroke="#6366f1" stroke-width="8" stroke-linecap="round"
+                                    stroke-dasharray="213.6" stroke-dashoffset="213.6"
+                                    transform="rotate(-90 40 40)"/>
+                            </svg>
+                            <div class="conf-ring-label">
+                                <span class="conf-score-val" id="modalConfScore">—</span>
+                                <span class="conf-score-sub">confidence</span>
+                            </div>
+                        </div>
+                        <div class="personality-info">
+                            <div class="pers-type" id="modalPersonalityType">—</div>
+                            <div class="pers-label">Communication Style</div>
+                            <div class="pers-area" id="modalImprovArea">—</div>
+                            <div class="pers-area-label">Key Improvement Area</div>
+                        </div>
+                    </div>
+
+                    <div class="analysis-summary" id="analysisSummary"></div>
+                    
+                    <div class="strengths-weaknesses">
+                        <div class="strengths">
+                            <h3><i class="fas fa-check-circle"></i> Strengths</h3>
+                            <ul id="strengthsList"></ul>
+                        </div>
+                        <div class="improvements">
+                            <h3><i class="fas fa-exclamation-circle"></i> To Improve</h3>
+                            <ul id="improvementsList"></ul>
+                        </div>
+                    </div>
+                    
+                    <div class="recommendations">
+                        <h3>🎯 Key Recommendations</h3>
+                        <ul id="recommendationsList"></ul>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button class="btn-primary" id="newSessionBtn">
+                        <i class="fas fa-redo"></i> New Practice
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Chatbot -->
+    <div class="chat-bubble" id="chatBubble">
+        <button class="chat-bubble-btn" id="chatBubbleBtn" title="AI Coach">
+            <i class="fas fa-robot"></i>
+            <span class="chat-bubble-badge" id="chatBadge">1</span>
+        </button>
+    </div>
+
+    <div class="chat-panel" id="chatPanel">
+        <div class="chat-header">
+            <div class="chat-header-avatar">
+                <i class="fas fa-robot"></i>
+            </div>
+            <div class="chat-header-info">
+                <h3>AI Coach</h3>
+                <span>Presentation coaching assistant</span>
+            </div>
+            <div class="chat-header-actions">
+                <button id="chatClearBtn" title="Clear chat"><i class="fas fa-redo"></i></button>
+                <button id="chatCloseBtn" title="Close"><i class="fas fa-times"></i></button>
+            </div>
+        </div>
+
+        <!-- Robot Avatar -->
+        <div style="padding: 10px 16px 4px; text-align: center; position: relative;">
+            <div class="robot-avatar" id="robotAvatar">
+                <div class="robot-head">
+                    <div class="robot-visor"></div>
+                    <div class="robot-antenna-left"></div>
+                    <div class="robot-antenna-right"></div>
+                    <div class="robot-eyes">
+                        <div class="robot-eye"></div>
+                        <div class="robot-eye"></div>
+                    </div>
+                </div>
+                <div class="robot-neck"></div>
+                <div class="robot-body">
+                    <div class="robot-chest">
+                        <div class="robot-chest-light"></div>
+                    </div>
+                </div>
+                <div class="robot-shadow"></div>
+            </div>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            <!-- Messages will be added dynamically -->
+        </div>
+
+        <div class="chat-input-area">
+            <input type="text" class="chat-input" id="chatInput" placeholder="Ask AI Coach..." autocomplete="off">
+            <button class="chat-send-btn" id="chatSendBtn" title="Send"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/script.js') }}?v=11"></script>
+</body>
+</html>

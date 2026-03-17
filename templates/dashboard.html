@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CampusSpeak AI — Progress Dashboard</title>
+    <meta name="description" content="Track your speaking improvement over time with CampusSpeak AI's Progress Dashboard.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --accent: #06b6d4;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #0f172a;
+            --card-bg: rgba(255,255,255,0.06);
+            --border: rgba(255,255,255,0.1);
+            --text: #f1f5f9;
+            --text-muted: rgba(255,255,255,0.5);
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            background: #0f172a;
+            color: var(--text);
+            overflow-x: hidden;
+        }
+
+        /* Animated BG */
+        .bg-glow {
+            position: fixed; inset:0; z-index:0; pointer-events:none;
+            background:
+                radial-gradient(ellipse 70% 60% at 20% 20%, rgba(99,102,241,0.18) 0%, transparent 70%),
+                radial-gradient(ellipse 70% 60% at 80% 80%, rgba(139,92,246,0.14) 0%, transparent 70%),
+                radial-gradient(ellipse 50% 40% at 50% 50%, rgba(6,182,212,0.08) 0%, transparent 70%);
+        }
+
+        /* Layout */
+        .page { position:relative; z-index:1; padding:20px; max-width:1400px; margin:0 auto; }
+
+        /* Header */
+        .dash-header {
+            display:flex; align-items:center; justify-content:space-between;
+            background: rgba(255,255,255,0.07);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius:20px; padding:16px 24px; margin-bottom:24px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+        .dash-logo { display:flex; align-items:center; gap:12px; }
+        .dash-logo .icon-wrap {
+            width:48px; height:48px; border-radius:14px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display:flex; align-items:center; justify-content:center;
+            font-size:1.4rem; box-shadow: 0 4px 16px rgba(99,102,241,0.4);
+        }
+        .dash-logo h1 { font-size:1.3rem; font-weight:700; }
+        .dash-logo span { font-size:0.8rem; color:var(--text-muted); }
+        .dash-nav { display:flex; gap:10px; }
+        .nav-btn {
+            display:inline-flex; align-items:center; gap:8px;
+            padding:10px 18px; border-radius:12px; border:1px solid var(--border);
+            background:var(--card-bg); color:var(--text); text-decoration:none;
+            font-size:0.85rem; font-weight:500; cursor:pointer;
+            transition: all 0.25s ease;
+        }
+        .nav-btn:hover { background:rgba(255,255,255,0.12); transform:translateY(-1px); }
+        .nav-btn.primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-color:transparent;
+            box-shadow: 0 4px 16px rgba(99,102,241,0.4);
+        }
+        .nav-btn.primary:hover { box-shadow: 0 6px 24px rgba(99,102,241,0.6); }
+
+        /* Stat Cards */
+        .stats-grid {
+            display:grid; grid-template-columns: repeat(4, 1fr);
+            gap:16px; margin-bottom:24px;
+        }
+        .stat-card {
+            background:var(--card-bg); border:1px solid var(--border);
+            backdrop-filter:blur(16px); border-radius:18px; padding:20px;
+            display:flex; align-items:center; gap:16px;
+            transition: all 0.3s ease;
+        }
+        .stat-card:hover { transform:translateY(-3px); border-color:rgba(99,102,241,0.3); background:rgba(255,255,255,0.09); }
+        .stat-icon {
+            width:50px; height:50px; border-radius:14px;
+            display:flex; align-items:center; justify-content:center; font-size:1.3rem;
+            flex-shrink:0;
+        }
+        .stat-icon.purple { background:rgba(99,102,241,0.2); color:var(--primary); }
+        .stat-icon.cyan   { background:rgba(6,182,212,0.2);  color:var(--accent);  }
+        .stat-icon.green  { background:rgba(16,185,129,0.2); color:var(--success); }
+        .stat-icon.amber  { background:rgba(245,158,11,0.2); color:var(--warning); }
+        .stat-label { font-size:0.78rem; color:var(--text-muted); margin-bottom:4px; }
+        .stat-value { font-size:1.8rem; font-weight:800; line-height:1; }
+        .stat-sub { font-size:0.72rem; color:var(--text-muted); margin-top:4px; }
+
+        /* Charts row */
+        .charts-grid {
+            display:grid; grid-template-columns: 2fr 1fr; gap:16px; margin-bottom:24px;
+        }
+        .chart-card {
+            background:var(--card-bg); border:1px solid var(--border);
+            backdrop-filter:blur(16px); border-radius:18px; padding:20px;
+        }
+        .chart-card h2 {
+            font-size:0.95rem; font-weight:600; margin-bottom:16px;
+            display:flex; align-items:center; gap:8px;
+        }
+        .chart-card h2 i { color:var(--primary); }
+        .chart-wrap { position:relative; height:240px; }
+
+        /* Personality Cards */
+        .personality-grid {
+            display:grid; grid-template-columns: repeat(3, 1fr); gap:16px; margin-bottom:24px;
+        }
+        .persona-card {
+            background:var(--card-bg); border:1px solid var(--border);
+            border-radius:18px; padding:20px;
+            display:flex; flex-direction:column; align-items:center; text-align:center;
+            gap:10px; transition: all 0.3s;
+        }
+        .persona-card:hover { transform:translateY(-3px); border-color:rgba(99,102,241,0.3); }
+        .persona-icon { font-size:2.2rem; }
+        .persona-label { font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; }
+        .persona-value { font-size:1rem; font-weight:700; }
+        .persona-sub { font-size:0.78rem; color:var(--text-muted); line-height:1.5; }
+
+        /* Session History */
+        .history-card {
+            background:var(--card-bg); border:1px solid var(--border);
+            backdrop-filter:blur(16px); border-radius:18px; padding:20px; margin-bottom:24px;
+        }
+        .history-card h2 { font-size:0.95rem; font-weight:600; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+        .history-card h2 i { color:var(--primary); }
+        .history-table { width:100%; border-collapse:collapse; }
+        .history-table th {
+            text-align:left; padding:8px 12px; font-size:0.75rem;
+            color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px;
+            border-bottom:1px solid var(--border);
+        }
+        .history-table td { padding:10px 12px; font-size:0.85rem; border-bottom:1px solid rgba(255,255,255,0.04); }
+        .history-table tr:hover td { background:rgba(255,255,255,0.04); }
+        .badge {
+            display:inline-block; padding:3px 8px; border-radius:20px; font-size:0.72rem; font-weight:600;
+        }
+        .badge-green  { background:rgba(16,185,129,0.15); color:#10b981; }
+        .badge-amber  { background:rgba(245,158,11,0.15);  color:#f59e0b; }
+        .badge-red    { background:rgba(239,68,68,0.15);   color:#ef4444; }
+        .badge-purple { background:rgba(99,102,241,0.15);  color:#6366f1; }
+        .badge-blue   { background:rgba(6,182,212,0.15);   color:#06b6d4; }
+
+        /* Empty State */
+        .empty-state {
+            text-align:center; padding:60px 20px; color:var(--text-muted);
+        }
+        .empty-state i { font-size:3rem; margin-bottom:16px; display:block; color:var(--primary); opacity:0.4; }
+        .empty-state p { margin-bottom:20px; font-size:0.95rem; }
+
+        /* Confidence ring */
+        .ring-container {
+            display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%;
+        }
+        .ring-svg { width:180px; height:180px; }
+        .ring-bg { fill:none; stroke:rgba(255,255,255,0.06); stroke-width:14; }
+        .ring-fill { fill:none; stroke-width:14; stroke-linecap:round; transform-origin:center; transform:rotate(-90deg); transition:stroke-dashoffset 1s ease; }
+        .ring-text { font-size:1.8rem; font-weight:800; fill:var(--text); dominant-baseline:middle; text-anchor:middle; }
+        .ring-label { font-size:0.65rem; fill:var(--text-muted); dominant-baseline:middle; text-anchor:middle; }
+        .ring-caption { font-size:0.8rem; color:var(--text-muted); margin-top:8px; }
+
+        /* Progress bar */
+        .prog-bar-wrap { margin:8px 0; }
+        .prog-bar-label { display:flex; justify-content:space-between; font-size:0.78rem; margin-bottom:4px; }
+        .prog-bar-track { height:8px; background:rgba(255,255,255,0.07); border-radius:4px; overflow:hidden; }
+        .prog-bar-fill { height:100%; border-radius:4px; transition:width 1s ease; }
+
+        /* Improvement trend */
+        .trend-up   { color:#10b981; }
+        .trend-down { color:#ef4444; }
+        .trend-neutral { color:#f59e0b; }
+
+        /* Loading skeleton */
+        .skeleton { background:linear-gradient(90deg,rgba(255,255,255,0.04) 25%,rgba(255,255,255,0.09) 50%,rgba(255,255,255,0.04) 75%); background-size:400% 100%; animation:shimmer 1.4s infinite; border-radius:8px; }
+        @keyframes shimmer { 0%{background-position:100% 0} 100%{background-position:-100% 0} }
+
+        /* Responsive */
+        @media(max-width:1000px){
+            .stats-grid { grid-template-columns:repeat(2,1fr); }
+            .charts-grid { grid-template-columns:1fr; }
+            .personality-grid { grid-template-columns:repeat(2,1fr); }
+        }
+        @media(max-width:600px){
+            .stats-grid { grid-template-columns:1fr; }
+            .personality-grid { grid-template-columns:1fr; }
+            .dash-nav { display:none; }
+        }
+    </style>
+</head>
+<body>
+<div class="bg-glow"></div>
+<div class="page">
+
+    <!-- Header -->
+    <header class="dash-header">
+        <div class="dash-logo">
+            <div class="icon-wrap"><i class="fas fa-chart-line"></i></div>
+            <div>
+                <h1>Progress Dashboard</h1>
+                <span id="usernameLabel">Loading...</span>
+            </div>
+        </div>
+        <nav class="dash-nav">
+            {% if demo_mode %}
+            <a href="/demo" class="nav-btn"><i class="fas fa-microphone"></i> Practice</a>
+            <a href="/demo" class="nav-btn"><i class="fas fa-star"></i> Demo Mode</a>
+            {% else %}
+            <a href="/app" class="nav-btn"><i class="fas fa-microphone"></i> Practice</a>
+            <a href="/logout" class="nav-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            {% endif %}
+            <button class="nav-btn primary" id="refreshBtn"><i class="fas fa-sync-alt"></i> Refresh</button>
+        </nav>
+    </header>
+
+    <!-- Stat Cards -->
+    <div class="stats-grid" id="statsGrid">
+        <div class="stat-card">
+            <div class="stat-icon purple"><i class="fas fa-dumbbell"></i></div>
+            <div>
+                <div class="stat-label">Total Sessions</div>
+                <div class="stat-value" id="totalSessions">—</div>
+                <div class="stat-sub">practice sessions recorded</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon cyan"><i class="fas fa-bolt"></i></div>
+            <div>
+                <div class="stat-label">Avg. Confidence</div>
+                <div class="stat-value" id="avgConfidence">—</div>
+                <div class="stat-sub">across all sessions</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon green"><i class="fas fa-tachometer-alt"></i></div>
+            <div>
+                <div class="stat-label">Best WPM</div>
+                <div class="stat-value" id="bestWpm">—</div>
+                <div class="stat-sub">words per minute record</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon amber"><i class="fas fa-trophy"></i></div>
+            <div>
+                <div class="stat-label">Improvement</div>
+                <div class="stat-value" id="improvementPct" style="font-size:1.4rem">—</div>
+                <div class="stat-sub">confidence since Day 1</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="charts-grid">
+        <div class="chart-card">
+            <h2><i class="fas fa-chart-area"></i> Confidence & Clarity Over Time</h2>
+            <div class="chart-wrap">
+                <canvas id="progressChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-card" style="display:flex;flex-direction:column;align-items:stretch;">
+            <h2><i class="fas fa-bullseye"></i> Latest Confidence Score</h2>
+            <div class="ring-container">
+                <svg class="ring-svg" viewBox="0 0 120 120">
+                    <circle class="ring-bg" cx="60" cy="60" r="50"></circle>
+                    <circle class="ring-fill" id="confRing" cx="60" cy="60" r="50"
+                        stroke="#6366f1"
+                        stroke-dasharray="314.16"
+                        stroke-dashoffset="314.16"></circle>
+                    <text class="ring-text" x="60" y="57" id="confScore">-</text>
+                    <text class="ring-label" x="60" y="72">/ 100</text>
+                </svg>
+                <div class="ring-caption" id="confCaption">Complete a session to see your score</div>
+                <!-- Mini progress bars -->
+                <div style="width:100%;margin-top:12px" id="miniBars"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Personality -->
+    <div class="personality-grid" id="personalityGrid">
+        <div class="persona-card">
+            <div class="persona-icon">🎭</div>
+            <div class="persona-label">Communication Type</div>
+            <div class="persona-value" id="commType">—</div>
+            <div class="persona-sub" id="commTypeSub">Complete a session to discover your speaking style</div>
+        </div>
+        <div class="persona-card">
+            <div class="persona-icon">🎯</div>
+            <div class="persona-label">Key Improvement Area</div>
+            <div class="persona-value" id="improvArea" style="font-size:0.9rem">—</div>
+            <div class="persona-sub">Focus area based on your latest session</div>
+        </div>
+        <div class="persona-card">
+            <div class="persona-icon">🔥</div>
+            <div class="persona-label">Practice Streak</div>
+            <div class="persona-value" id="streakVal">—</div>
+            <div class="persona-sub">Keep it up — consistency is key!</div>
+        </div>
+    </div>
+
+    <!-- Session History -->
+    <div class="history-card">
+        <h2><i class="fas fa-history"></i> Session History</h2>
+        <div id="historyBody">
+            <div class="empty-state">
+                <i class="fas fa-microphone-slash"></i>
+                <p>No practice sessions recorded yet.<br>Head to the practice area and start speaking!</p>
+                <a href="{{ '/demo' if demo_mode else '/app' }}" class="nav-btn primary" style="display:inline-flex;margin:0 auto;">
+                    <i class="fas fa-play"></i> Start Practice
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+// ──────────────────────────────────────────────────────────────
+// Dashboard Logic
+// ──────────────────────────────────────────────────────────────
+let progressChart = null;
+const dashboardDataEndpoint = {{ ('/demo-dashboard-data' if demo_mode else '/dashboard-data') | tojson }};
+
+function confidenceColor(score) {
+    if (score >= 75) return '#10b981';
+    if (score >= 50) return '#f59e0b';
+    return '#ef4444';
+}
+
+function confidenceBadge(score) {
+    if (score >= 75) return `<span class="badge badge-green">${score}%</span>`;
+    if (score >= 50) return `<span class="badge badge-amber">${score}%</span>`;
+    return `<span class="badge badge-red">${score}%</span>`;
+}
+
+function formatDate(iso) {
+    const d = new Date(iso);
+    return d.toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'});
+}
+
+function formatDuration(sec) {
+    if (!sec) return '0s';
+    if (sec < 60) return `${Math.round(sec)}s`;
+    return `${Math.floor(sec/60)}m ${Math.round(sec%60)}s`;
+}
+
+function modeBadge(mode) {
+    const map = {
+        'Free Speaking': '<span class="badge badge-blue">Free</span>',
+        'HR Interview': '<span class="badge badge-purple">HR</span>',
+        'Self Introduction': '<span class="badge badge-green">Intro</span>',
+        'Presentation': '<span class="badge badge-amber">Pres.</span>',
+        'Group Discussion': '<span class="badge badge-red">GD</span>',
+    };
+    return map[mode] || `<span class="badge badge-blue">${mode}</span>`;
+}
+
+async function loadDashboard() {
+    try {
+        const res = await fetch(dashboardDataEndpoint, { credentials: 'same-origin' });
+        if (!res.ok) {
+            if (res.status === 401 && dashboardDataEndpoint === '/dashboard-data') {
+                window.location = '/login';
+                return;
+            }
+            throw new Error('Failed');
+        }
+        const data = await res.json();
+        renderDashboard(data);
+    } catch(e) {
+        console.error(e);
+        document.getElementById('historyBody').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load data. Please refresh.</p></div>';
+    }
+}
+
+function renderDashboard(data) {
+    const sessions = data.sessions || [];
+    document.getElementById('usernameLabel').textContent = `Welcome back, ${data.username}!`;
+
+    // ── Stat Cards ─────────────────────────────────────────────
+    document.getElementById('totalSessions').textContent = sessions.length || '0';
+
+    if (sessions.length === 0) {
+        ['avgConfidence','bestWpm','improvementPct'].forEach(id => document.getElementById(id).textContent = '—');
+    } else {
+        const avgConf = Math.round(sessions.reduce((s,x)=>s+x.confidence_score,0)/sessions.length);
+        const bestWpm = Math.max(...sessions.map(x=>x.wpm));
+        const first = sessions[0].confidence_score;
+        const last  = sessions[sessions.length-1].confidence_score;
+        const diff  = last - first;
+        document.getElementById('avgConfidence').textContent = avgConf + '%';
+        document.getElementById('bestWpm').textContent = bestWpm;
+        const impEl = document.getElementById('improvementPct');
+        if (sessions.length < 2) {
+            impEl.textContent = 'N/A';
+        } else {
+            const sign = diff >= 0 ? '+' : '';
+            impEl.textContent = `${sign}${diff}%`;
+            impEl.className = 'stat-value ' + (diff >= 0 ? 'trend-up' : 'trend-down');
+        }
+
+        // ── Ring ─────────────────────────────────────────────────
+        const latestConf = last;
+        const circumference = 2 * Math.PI * 50; // 314.16
+        const offset = circumference * (1 - latestConf / 100);
+        const ring = document.getElementById('confRing');
+        ring.style.stroke = confidenceColor(latestConf);
+        ring.style.strokeDashoffset = offset;
+        document.getElementById('confScore').textContent = latestConf + '%';
+        document.getElementById('confScore').style.fill = confidenceColor(latestConf);
+        document.getElementById('confCaption').textContent = sessions[sessions.length-1].personality_type || 'Speaking Profile';
+
+        // Mini bars
+        const latestSession = sessions[sessions.length-1];
+        const miniBars = document.getElementById('miniBars');
+        miniBars.innerHTML = [
+            {label:'Clarity', value: latestSession.clarity, color:'#6366f1'},
+            {label:'Filler Control', value: Math.max(0, 100 - latestSession.filler_count*10), color:'#10b981'},
+            {label:'Pace Score', value: Math.min(100, Math.round((latestSession.wpm/200)*100)), color:'#f59e0b'},
+        ].map(b => `
+            <div class="prog-bar-wrap">
+                <div class="prog-bar-label"><span>${b.label}</span><span style="color:${b.color};font-weight:600">${b.value}%</span></div>
+                <div class="prog-bar-track"><div class="prog-bar-fill" style="width:${b.value}%;background:${b.color}"></div></div>
+            </div>
+        `).join('');
+
+        // ── Personality Cards ─────────────────────────────────────
+        document.getElementById('commType').textContent = latestSession.personality_type || '—';
+        document.getElementById('improvArea').textContent = latestSession.improvement_area || '—';
+
+        // Streak (days with sessions in the last 7 days)
+        const sevenDaysAgo = new Date(Date.now() - 7*24*60*60*1000);
+        const recentCount = sessions.filter(s => new Date(s.created_at) > sevenDaysAgo).length;
+        document.getElementById('streakVal').textContent = recentCount > 0 ? `${recentCount} this week` : 'Start today!';
+
+        // ── Progress Chart ────────────────────────────────────────
+        const labels = sessions.map((_,i) => sessions.length === 1 ? 'Session 1' : `S${i+1}`);
+        const confData = sessions.map(s => s.confidence_score);
+        const clarityData = sessions.map(s => s.clarity);
+
+        if (progressChart) progressChart.destroy();
+        const ctx = document.getElementById('progressChart').getContext('2d');
+        progressChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: 'Confidence Score',
+                        data: confData,
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99,102,241,0.12)',
+                        borderWidth: 2.5,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#6366f1',
+                        pointRadius: 4,
+                    },
+                    {
+                        label: 'Clarity',
+                        data: clarityData,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16,185,129,0.08)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#10b981',
+                        pointRadius: 3,
+                    },
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                interaction: { intersect: false, mode: 'index' },
+                plugins: {
+                    legend: { labels: { color: 'rgba(255,255,255,0.6)', font:{size:11}, boxWidth:12 } },
+                    tooltip: {
+                        backgroundColor: 'rgba(15,23,42,0.95)',
+                        borderColor: 'rgba(99,102,241,0.4)',
+                        borderWidth: 1,
+                        titleColor:'#fff',
+                        bodyColor:'rgba(255,255,255,0.7)',
+                        padding: 10,
+                        callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y}%` }
+                    }
+                },
+                scales: {
+                    x: { grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'rgba(255,255,255,0.4)', font:{size:10}} },
+                    y: { min:0, max:100, grid:{color:'rgba(255,255,255,0.05)'}, ticks:{color:'rgba(255,255,255,0.4)', callback: v => v+'%', font:{size:10} } }
+                }
+            }
+        });
+
+        // ── Session History Table ─────────────────────────────────
+        const rows = [...sessions].reverse().map((s, i) => `
+            <tr>
+                <td style="color:var(--text-muted)">${formatDate(s.created_at)}</td>
+                <td>${modeBadge(s.mode)}</td>
+                <td>${confidenceBadge(s.confidence_score)}</td>
+                <td>${s.clarity}%</td>
+                <td>${s.wpm} <small style="color:var(--text-muted)">WPM</small></td>
+                <td style="color:var(--text-muted)">${s.filler_count}</td>
+                <td>${formatDuration(s.duration)}</td>
+                <td style="color:var(--text-muted);font-size:0.78rem;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"
+                    title="${s.personality_type}">${s.personality_type || '—'}</td>
+            </tr>
+        `).join('');
+
+        document.getElementById('historyBody').innerHTML = `
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Date & Time</th>
+                        <th>Mode</th>
+                        <th>Confidence</th>
+                        <th>Clarity</th>
+                        <th>WPM</th>
+                        <th>Fillers</th>
+                        <th>Duration</th>
+                        <th>Speaker Type</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+        `;
+    }
+}
+
+document.getElementById('refreshBtn').addEventListener('click', loadDashboard);
+loadDashboard();
+</script>
+</body>
+</html>
